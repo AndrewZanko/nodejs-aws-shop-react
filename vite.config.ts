@@ -13,6 +13,17 @@ export default defineConfig({
     },
   },
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      onwarn(warning, warn) {
+        if (warning.code === "MODULE_LEVEL_DIRECTIVE") {
+          return;
+        }
+        warn(warning);
+      },
+    },
+  },
   test: {
     globals: true,
     environment: "jsdom",
