@@ -1,7 +1,8 @@
 import React from "react";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { enqueueSnackbar } from "notistack";
 
 type CSVFileImportProps = {
   url: string;
@@ -28,20 +29,38 @@ export default function CSVFileImport({ url, title }: CSVFileImportProps) {
 
     if (!file?.name) return;
 
-    const response = await axios({
-      method: "GET",
-      url,
-      params: {
-        name: encodeURIComponent(file.name),
-      },
-    });
-    console.log("File to upload: ", file.name);
-    console.log("Uploading to: ", response.data);
-    const result = await fetch(response.data, {
-      method: "PUT",
-      body: file,
-    });
-    console.log("Result: ", result);
+    const authToken = `Basic ${localStorage.getItem("authorization_token")}`;
+
+    try {
+      const response = await axios({
+        method: "GET",
+        url,
+        params: {
+          name: encodeURIComponent(file.name),
+        },
+        headers: {
+          Authorization: authToken,
+        },
+      });
+      console.log("File to upload: ", file.name);
+      console.log("Uploading to: ", response.data);
+      const result = await fetch(response.data, {
+        method: "PUT",
+        body: file,
+      });
+      console.log("Result: ", result);
+    } catch (error) {
+      console.log(error);
+      if ((error as AxiosError)?.response?.status === 401) {
+        enqueueSnackbar({ message: "401, missing header!", variant: "error" });
+      }
+      if ((error as AxiosError)?.response?.status === 403) {
+        enqueueSnackbar({
+          message: "403, incorrect credentials!",
+          variant: "error",
+        });
+      }
+    }
     setFile(null);
   };
   return (
